@@ -39,6 +39,13 @@
 
 /* Control and Status Registers */
 
+/* CFI CSRs */
+#define CSR_ULPLR           0x006
+#define CSR_USSP            0x020
+#define CSR_SCFISTATUS      0x10b
+#define CSR_VSCFISTATUS     0x20b
+#define CSR_MCFISTATUS      0x30b
+
 /* User Trap Setup */
 #define CSR_USTATUS         0x000
 #define CSR_UIE             0x004
@@ -523,6 +530,36 @@ typedef enum {
     MXL_RV64  = 2,
     MXL_RV128 = 3,
 } RISCVMXL;
+
+/* CFI CSR bits */
+#define CFISTATUS_MFCFIEN   0x00000001
+#define CFISTATUS_MBCFIEN   0x00000002
+#define CFISTATUS_SFCFIEN   0x00000004
+#define CFISTATUS_SBCFIEN   0x00000008
+#define CFISTATUS_UFCFIEN   0x00000010
+#define CFISTATUS_UBCFIEN   0x00000020
+#define CFISTATUS_MPELP     0x00000040
+#define CFISTATUS_SPELP     0x00000080
+#define CFISTATUS_M_MASK    (CFISTATUS_MFCFIEN | CFISTATUS_MBCFIEN | CFISTATUS_SFCFIEN | \
+                             CFISTATUS_SBCFIEN | CFISTATUS_UFCFIEN | CFISTATUS_UBCFIEN | \
+                             CFISTATUS_MPELP | CFISTATUS_SPELP)
+#define CFISTATUS_S_MASK    (CFISTATUS_SPELP | CFISTATUS_SFCFIEN | CFISTATUS_SBCFIEN | \
+                             CFISTATUS_UFCFIEN | CFISTATUS_UBCFIEN)
+
+typedef enum {
+    NO_LP_EXPECTED   = 0,
+    LP_EXPECTED = 1,
+} cfi_elp;
+
+#define ULPLR_UL            (((1<<8) - 1) << 17)
+#define ULPLR_ML            (((1<<8) - 1) << 9)
+#define ULPLR_LL            ((1<<9) - 1)
+
+typedef enum {
+    FCFI_LPLL      = 0,
+    FCFI_ML       = 1,
+    FCFI_UL       = 2,
+} cfi_label_inst;
 
 /* sstatus CSR bits */
 #define SSTATUS_UIE         0x00000001

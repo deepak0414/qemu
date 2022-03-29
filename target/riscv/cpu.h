@@ -85,7 +85,8 @@ enum {
     RISCV_FEATURE_PMP,
     RISCV_FEATURE_EPMP,
     RISCV_FEATURE_MISA,
-    RISCV_FEATURE_DEBUG
+    RISCV_FEATURE_DEBUG,
+    RISCV_FEATURE_PMPSS
 };
 
 /* Privileged specification version */
@@ -180,6 +181,11 @@ struct CPUArchState {
     target_ulong retxh;
 
     uint32_t features;
+
+    /* CFI Extension user mode registers and state */
+    uint32_t     ulplr;
+    target_ulong ssp;
+    cfi_elp      elp;
 
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
@@ -368,6 +374,11 @@ struct CPUArchState {
     uint64_t menvcfg;
     target_ulong senvcfg;
     uint64_t henvcfg;
+    /* CFI Extension Registers */
+    target_ulong mcfistatus;
+    target_ulong mcfistatus_hs;
+    target_ulong vscfistatus;
+    target_ulong ss_priv;
 #endif
     target_ulong cur_pmmask;
     target_ulong cur_pmbase;
@@ -463,6 +474,8 @@ struct RISCVCPUConfig {
     uint32_t mvendorid;
     uint64_t marchid;
     uint64_t mimpid;
+    bool ext_zimops;
+    bool ext_cfi;
 
     /* Vendor-specific custom extensions */
     bool ext_XVentanaCondOps;
@@ -477,6 +490,8 @@ struct RISCVCPUConfig {
     bool mmu;
     bool pmp;
     bool epmp;
+    bool pmpss;
+    bool aia;
     bool debug;
 
     bool short_isa_string;
@@ -553,6 +568,8 @@ bool riscv_cpu_virt_enabled(CPURISCVState *env);
 void riscv_cpu_set_virt_enabled(CPURISCVState *env, bool enable);
 bool riscv_cpu_two_stage_lookup(int mmu_idx);
 int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch);
+bool cpu_get_fcfien(CPURISCVState *env);
+bool cpu_get_bcfien(CPURISCVState *env);
 hwaddr riscv_cpu_get_phys_page_debug(CPUState *cpu, vaddr addr);
 G_NORETURN void  riscv_cpu_do_unaligned_access(CPUState *cs, vaddr addr,
                                                MMUAccessType access_type, int mmu_idx,
@@ -601,6 +618,8 @@ void riscv_cpu_set_fflags(CPURISCVState *env, target_ulong);
 #define TB_FLAGS_MSTATUS_FS MSTATUS_FS
 #define TB_FLAGS_MSTATUS_VS MSTATUS_VS
 
+#define MMU_IDX_SS_ACCESS    6
+
 #include "exec/cpu-all.h"
 
 FIELD(TB_FLAGS, MEM_IDX, 0, 3)
@@ -621,6 +640,10 @@ FIELD(TB_FLAGS, PM_MASK_ENABLED, 22, 1)
 FIELD(TB_FLAGS, PM_BASE_ENABLED, 23, 1)
 FIELD(TB_FLAGS, VTA, 24, 1)
 FIELD(TB_FLAGS, VMA, 25, 1)
+/* CFI */
+FIELD(TB_FLAGS, BCFI_ENABLED, 26, 1)
+FIELD(TB_FLAGS, FCFI_ENABLED, 27, 1)
+FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 28, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)

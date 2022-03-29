@@ -123,6 +123,70 @@ target_ulong helper_csrrw_i128(CPURISCVState *env, int csr,
     return int128_getlo(rv);
 }
 
+void helper_backcfi_mismatch(CPURISCVState *env)
+{
+    if (env->gpr[xRA] != env->gpr[xT0]) {
+        riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
+    }
+}
+
+void helper_cfi_jalr(CPURISCVState *env, int elp)
+{
+    /*
+     * The translation routine doesn't know if forward CFI is enabled
+     * in the current processor mode or not. It's not worth burning a
+     * cflags bit to encode this, or tracking the current-mode-fcfi
+     * enable in a dedicated member of 'env'. Just come out to a helper
+     * for jump/call on a core with CFI.
+     */
+    if (cpu_get_fcfien(env)) {
+        env->elp = elp;
+    }
+}
+
+void helper_cfi_landing_pad(CPURISCVState *env, int lbl, int inst_type)
+{
+    if (cpu_get_fcfien(env)) {
+        switch (inst_type) {
+        case FCFI_LPLL:
+            /* Check for a lower label match. We already checked 4 byte alignment in tcg */
+            if (lbl != get_field(env->ulplr, ULPLR_LL)) {
+                riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
+            }
+            env->elp = NO_LP_EXPECTED;
+            break;
+        case FCFI_ML:
+            if (lbl != get_field(env->ulplr,  ULPLR_ML)) {
+                riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
+            }
+            break;
+        case FCFI_UL:
+            if (lbl != get_field(env->ulplr,  ULPLR_UL)) {
+                riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
+            }
+        }
+    }
+}
+
+void helper_cfi_set_landing_pad(CPURISCVState *env, int lbl, int inst_type)
+{
+    if (cpu_get_fcfien(env)) {
+        switch (inst_type) {
+        case FCFI_LPLL:
+            /* setting lower label always clears up entire field */
+            env->ulplr = 0;
+            env->ulplr = set_field(env->ulplr, ULPLR_LL, lbl);
+            break;
+        case FCFI_ML:
+            env->ulplr = set_field(env->ulplr, ULPLR_ML, lbl);
+            break;
+        case FCFI_UL:
+            env->ulplr = set_field(env->ulplr, ULPLR_UL, lbl);
+            break;                        
+        }
+    }
+}
+
 #ifndef CONFIG_USER_ONLY
 
 target_ulong helper_sret(CPURISCVState *env)
@@ -181,6 +245,11 @@ target_ulong helper_sret(CPURISCVState *env)
         env->mstatus = mstatus;
     }
 
+    if (cpu_get_fcfien(env)) {
+        env->elp = get_field(env->mcfistatus, CFISTATUS_SPELP);
+        env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_SPELP, 0);
+    }
+
     riscv_cpu_set_mode(env, prev_priv);
 
     return retpc;
@@ -222,6 +291,11 @@ target_ulong helper_mret(CPURISCVState *env)
         riscv_cpu_set_virt_enabled(env, prev_virt);
     }
 
+    if (cpu_get_fcfien(env)) {
+        env->elp = get_field(env->mcfistatus, CFISTATUS_MPELP);
+        env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_MPELP, 0);
+    }
+    
     return retpc;
 }
 

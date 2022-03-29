@@ -127,6 +127,15 @@ static RISCVException ctr32(CPURISCVState *env, int csrno)
     return ctr(env, csrno);
 }
 
+static RISCVException cfi(CPURISCVState *env, int csrno)
+{
+    if (env_archcpu(env)->cfg.ext_cfi) {
+        return RISCV_EXCP_NONE;
+    }
+
+    return RISCV_EXCP_ILLEGAL_INST;
+}
+
 #if !defined(CONFIG_USER_ONLY)
 static RISCVException mctr(CPURISCVState *env, int csrno)
 {
@@ -381,6 +390,31 @@ static RISCVException seed(CPURISCVState *env, int csrno)
 #else
     return RISCV_EXCP_NONE;
 #endif
+}
+
+/* User CFI CSR */
+static int read_ulplr(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    *val = env->ulplr;
+    return RISCV_EXCP_NONE;
+}
+
+static int write_ulplr(CPURISCVState *env, int csrno, target_ulong val)
+{
+    env->ulplr = val & (ULPLR_UL|ULPLR_LL);
+    return RISCV_EXCP_NONE;
+}
+
+static int read_ussp(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    *val = env->ssp;
+    return RISCV_EXCP_NONE;
+}
+
+static int write_ussp(CPURISCVState *env, int csrno, target_ulong val)
+{
+    env->ssp = val & ~3ULL; // XXX xlen
+    return RISCV_EXCP_NONE;
 }
 
 /* User Floating-Point CSRs */
@@ -2860,6 +2894,56 @@ static int write_hviprio2h(CPURISCVState *env, int csrno, target_ulong val)
     return write_hvipriox(env, 12, env->hviprio, val);
 }
 
+/* CFI CSRs */
+
+static bool valid_elp(unsigned elp)
+{
+    return (elp == NO_LP_EXPECTED || elp == LP_EXPECTED);
+}
+
+static RISCVException read_mcfistatus(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    target_ulong ret = env->mcfistatus;
+    if (csrno != CSR_MCFISTATUS) {
+        ret &= CFISTATUS_S_MASK;
+    }
+    *val = ret;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_mcfistatus(CPURISCVState *env, int csrno, target_ulong val)
+{
+    if (csrno != CSR_MCFISTATUS) {
+        val = (val & CFISTATUS_S_MASK) | (env->mcfistatus &= ~CFISTATUS_S_MASK);
+    } else {
+        val &= CFISTATUS_M_MASK;
+    }
+    if (!valid_elp(get_field(val, CFISTATUS_SPELP))) {
+        val = set_field(val, CFISTATUS_SPELP, get_field(env->mcfistatus, CFISTATUS_SPELP));
+    }
+    if (!valid_elp(get_field(val, CFISTATUS_MPELP))) {
+        val = set_field(val, CFISTATUS_MPELP, get_field(env->mcfistatus, CFISTATUS_MPELP));
+    }
+    env->mcfistatus = val;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException read_vscfistatus(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    *val = env->vscfistatus;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_vscfistatus(CPURISCVState *env, int csrno, target_ulong val)
+{
+    val &= CFISTATUS_S_MASK;
+    if (!valid_elp(get_field(val, CFISTATUS_SPELP))) {
+        val = set_field(val, CFISTATUS_SPELP, get_field(env->mcfistatus, CFISTATUS_SPELP));
+    }
+    env->vscfistatus = val;
+    return RISCV_EXCP_NONE;
+}
+
 /* Virtual CSR Registers */
 static RISCVException read_vsstatus(CPURISCVState *env, int csrno,
                                     target_ulong *val)
@@ -3670,6 +3754,10 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
 
     /* Crypto Extension */
     [CSR_SEED] = { "seed", seed, NULL, NULL, rmw_seed },
+    /* User mode CFI CSR */
+    /* User mode CFI CSRs */
+    [CSR_ULPLR] = { "ulplr", cfi, read_ulplr, write_ulplr },
+    [CSR_USSP]  = { "ussp", cfi, read_ussp, write_ussp },
 
 #if !defined(CONFIG_USER_ONLY)
     /* Machine Timers and Counters */
@@ -3875,6 +3963,11 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
                           write_hviprio2h                                   },
     [CSR_VSIEH]       = { "vsieh",       aia_hmode32, NULL, NULL, rmw_vsieh },
     [CSR_VSIPH]       = { "vsiph",       aia_hmode32, NULL, NULL, rmw_vsiph },
+
+    /* CFI CSRs */
+    [CSR_MCFISTATUS]  = { "mcfistatus",  cfi, read_mcfistatus,  write_mcfistatus },
+    [CSR_SCFISTATUS]  = { "scfistatus",  cfi, read_mcfistatus,  write_mcfistatus },
+    [CSR_VSCFISTATUS] = { "vscfistatus", cfi, read_vscfistatus, write_vscfistatus },
 
     /* Physical Memory Protection */
     [CSR_MSECCFG]    = { "mseccfg",  epmp, read_mseccfg, write_mseccfg,

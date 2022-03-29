@@ -364,6 +364,13 @@ bool pmp_hart_has_privs(CPURISCVState *env, target_ulong addr,
                 *allowed_privs = PMP_READ | PMP_WRITE | PMP_EXEC;
                 if ((mode != PRV_M) || pmp_is_locked(env, i)) {
                     *allowed_privs &= env->pmp_state.pmp[i].cfg_reg;
+                    /*
+                     * Include the SS bit in the allowed_privs so the
+                     * MMU can consider it.
+                     */
+                    if (riscv_feature(env, RISCV_FEATURE_PMPSS)) {
+                        *allowed_privs |= env->pmp_state.pmp[i].cfg_reg & PMP_SS;
+                    }
                 }
             } else {
                 /*
