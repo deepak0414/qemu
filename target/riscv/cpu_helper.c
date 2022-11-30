@@ -1884,8 +1884,8 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         riscv_cpu_set_mode(env, PRV_M);
     }
 
-    /*  clear LP expected */
-    if (cpu_get_fcfien(env)) {
+    /* if cfi is enabled, current ELP is saved. Clear LP expected */
+    if (cpu->cfg.ext_cfi) {
         env->elp = NO_LP_EXPECTED;
     }
     /* NOTE: it is not necessary to yield load reservations here. It is only

@@ -1098,8 +1098,8 @@ static Property riscv_cpu_properties[] = {
     DEFINE_PROP_UINT64("resetvec", RISCVCPU, env.resetvec, DEFAULT_RSTVEC),
 #endif
     /* Experimental CFI extension, Zcfi implicitly means Zimops is implemented */
-    DEFINE_PROP_BOOL("x-pmpss", RISCVCPU, cfg.pmpss, false),
-    DEFINE_PROP_BOOL("x-cfi", RISCVCPU, cfg.ext_cfi, false),
+    DEFINE_PROP_BOOL("x-pmpss", RISCVCPU, cfg.pmpss, true),
+    DEFINE_PROP_BOOL("x-cfi", RISCVCPU, cfg.ext_cfi, true),
     DEFINE_PROP_BOOL("zimops", RISCVCPU, cfg.ext_zimops, true),
 
     DEFINE_PROP_BOOL("short-isa-string", RISCVCPU, cfg.short_isa_string, false),

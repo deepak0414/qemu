@@ -1238,6 +1238,7 @@ static void riscv_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
 static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
 {
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
+    CPURISCVState *env = cpu->env_ptr;
 
     switch (ctx->base.is_jmp) {
     case DISAS_TOO_MANY:
@@ -1255,6 +1256,11 @@ static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
          * illegal instruction exception.
          */
         tcg_set_insn_param(cfi_lp_check, 1, tcgv_i32_arg(tcg_constant_i32(1)));
+    } else {
+        /*
+        * LP instruction requirement was met, clear up LP expected
+        */
+        env->elp = NO_LP_EXPECTED;
     }
 }
 
