@@ -45,11 +45,11 @@ bool cpu_get_fcfien(CPURISCVState *env)
 #else
     switch (env->priv) {
     case PRV_U:
-        return env->mcfistatus & CFISTATUS_UFCFIEN;
+        return env->mstatus & MSTATUS_UFCFIEN;
     case PRV_S:
-        return env->mcfistatus & CFISTATUS_SFCFIEN;
+        return env->mstatus & MSTATUS_SFCFIEN;
     case PRV_M:
-        return env->mcfistatus & CFISTATUS_MFCFIEN;
+        return env->mstatus & MSTATUS_MFCFIEN;
     default:
         g_assert_not_reached();
     }
@@ -63,11 +63,11 @@ bool cpu_get_bcfien(CPURISCVState *env)
 #else
     switch (env->priv) {
     case PRV_U:
-        return env->mcfistatus & CFISTATUS_UBCFIEN;
+        return env->mstatus & MSTATUS_UBCFIEN;
     case PRV_S:
-        return env->mcfistatus & CFISTATUS_SBCFIEN;
+        return env->mstatus & MSTATUS_SBCFIEN;
     case PRV_M:
-        return env->mcfistatus & CFISTATUS_MBCFIEN;
+        return true; /* no gating against menvcfg/henvcg here. default back cfi is on for M mode */
     default:
         g_assert_not_reached();
     }
@@ -534,6 +534,12 @@ void riscv_cpu_swap_hypervisor_regs(CPURISCVState *env)
     if (riscv_has_ext(env, RVF)) {
         mstatus_mask |= MSTATUS_FS;
     }
+
+    /* if cfi extension available and henvcfg.CFI = 1, then apply CFI mask on mstatus */
+    if ((env_archcpu(env)->cfg.ext_cfi) && get_field(env->henvcfg, HENVCFG_CFI)) {
+        mstatus_mask |= CFISTATUS_S_MASK;
+    }
+
     bool current_virt = riscv_cpu_virt_enabled(env);
 
     g_assert(riscv_has_ext(env, RVH));
@@ -561,10 +567,6 @@ void riscv_cpu_swap_hypervisor_regs(CPURISCVState *env)
 
         env->vsatp = env->satp;
         env->satp = env->satp_hs;
-
-        env->vscfistatus = env->mcfistatus & CFISTATUS_M_MASK;
-        env->mcfistatus &= ~CFISTATUS_M_MASK;
-        env->mcfistatus |= env->mcfistatus_hs;
     } else {
         /* Current V=0 and we are about to change to V=1 */
         env->mstatus_hs = env->mstatus & mstatus_mask;
@@ -588,10 +590,6 @@ void riscv_cpu_swap_hypervisor_regs(CPURISCVState *env)
 
         env->satp_hs = env->satp;
         env->satp = env->vsatp;
-
-        env->mcfistatus_hs = env->mcfistatus & CFISTATUS_M_MASK;
-        env->mcfistatus &= ~CFISTATUS_M_MASK;
-        env->mcfistatus |= env->vscfistatus;
     }
 }
 
@@ -1800,7 +1798,7 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         /* handle the trap in S-mode */
         /* save elp status */
         if (cpu_get_fcfien(env))
-            env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_SPELP, env->elp);
+            env->mstatus = set_field(env->mstatus, MSTATUS_SPELP, env->elp);
         if (riscv_has_ext(env, RVH)) {
             uint64_t hdeleg = async ? env->hideleg : env->hedeleg;
 
@@ -1852,7 +1850,7 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         /* handle the trap in M-mode */
         /* save elp status */
         if (cpu_get_fcfien(env))
-            env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_MPELP, env->elp);
+            env->mstatus = set_field(env->mstatus, MSTATUS_MPELP, env->elp);
         if (riscv_has_ext(env, RVH)) {
             if (riscv_cpu_virt_enabled(env)) {
                 riscv_cpu_swap_hypervisor_regs(env);
@@ -1885,6 +1883,8 @@ void riscv_cpu_do_interrupt(CPUState *cs)
     }
 
     /* if cfi is enabled, current ELP is saved. Clear LP expected */
+    /* Even if CFI was not enabled previously, this will clear up ELP state. */
+    /* So redundant. no harm */
     if (cpu->cfg.ext_cfi) {
         env->elp = NO_LP_EXPECTED;
     }

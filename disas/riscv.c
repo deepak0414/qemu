@@ -2114,7 +2114,8 @@ static const char *csr_name(int csrno)
     case 0x000a: return "vxrm";
     case 0x000f: return "vcsr";
     case 0x0015: return "seed";
-    case 0x0006: return "ulplr";
+    case 0x0006: return "lplr";
+    case 0x0020: return "ssp";
     case 0x0040: return "uscratch";
     case 0x0041: return "uepc";
     case 0x0042: return "ucause";
@@ -2124,7 +2125,6 @@ static const char *csr_name(int csrno)
     case 0x0104: return "sie";
     case 0x0105: return "stvec";
     case 0x0106: return "scounteren";
-    case 0x010b: return "scfistatus";
     case 0x0140: return "sscratch";
     case 0x0141: return "sepc";
     case 0x0142: return "scause";
@@ -2136,7 +2136,6 @@ static const char *csr_name(int csrno)
     case 0x0203: return "hideleg";
     case 0x0204: return "hie";
     case 0x0205: return "htvec";
-    case 0x020b: return "vscfistatus";
     case 0x0240: return "hscratch";
     case 0x0241: return "hepc";
     case 0x0242: return "hcause";
@@ -2149,7 +2148,6 @@ static const char *csr_name(int csrno)
     case 0x0304: return "mie";
     case 0x0305: return "mtvec";
     case 0x0306: return "mcounteren";
-    case 0x030b: return "mcfistatus";
     case 0x0320: return "mucounteren";
     case 0x0321: return "mscounteren";
     case 0x0322: return "mhcounteren";

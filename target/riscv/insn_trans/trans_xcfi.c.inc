@@ -52,14 +52,14 @@ static bool trans_sspop(DisasContext *ctx, arg_sspop *a)
 
     /*
     * get data in TCGv using get_gpr
-    * get addr in TCGv using gen_helper_csrr on CSR_USSP
+    * get addr in TCGv using gen_helper_csrr on CSR_SSP
     * use some tcg subtract arithmetic (subtract by XLEN) on addr
     * perform ss store on computed address
     */
 
     TCGv addr = tcg_temp_new();
     int tmp = (get_xl(ctx)==MXL_RV64)? 8 : 4;
-    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_USSP);
+    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     TCGv data = get_gpr(ctx, a->rd, EXT_NONE);
     gen_helper_csrr(addr, cpu_env, ssp_csr);
     tcg_gen_qemu_ld_tl(data, addr, MMU_IDX_SS_ACCESS,
@@ -92,14 +92,14 @@ static bool trans_sspush(DisasContext *ctx, arg_sspush *a)
 
     /*
     * get data in TCGv using get_gpr
-    * get addr in TCGv using gen_helper_csrr on CSR_USSP
+    * get addr in TCGv using gen_helper_csrr on CSR_SSP
     * use some tcg subtract arithmetic (subtract by XLEN) on addr
     * perform ss store on computed address
     */
 
     TCGv addr = tcg_temp_new();
     int tmp = (get_xl(ctx)==MXL_RV64)? -8 : -4;
-    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_USSP);
+    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     TCGv data = get_gpr(ctx, a->rs1, EXT_NONE);
     gen_helper_csrr(addr, cpu_env, ssp_csr);
 
@@ -149,7 +149,7 @@ static bool trans_ssprr(DisasContext *ctx, arg_ssprr *a)
     }
 
     TCGv dest = get_gpr(ctx, a->rd, EXT_NONE);
-    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_USSP);
+    TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     gen_helper_csrr(dest, cpu_env, ssp_csr);
     gen_set_gpr(ctx, a->rd, dest);
 

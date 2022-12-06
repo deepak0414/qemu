@@ -183,7 +183,7 @@ struct CPUArchState {
     uint32_t features;
 
     /* CFI Extension user mode registers and state */
-    uint32_t     ulplr;
+    uint32_t     lplr;
     target_ulong ssp;
     cfi_elp      elp;
 
@@ -374,10 +374,7 @@ struct CPUArchState {
     uint64_t menvcfg;
     target_ulong senvcfg;
     uint64_t henvcfg;
-    /* CFI Extension Registers */
-    target_ulong mcfistatus;
-    target_ulong mcfistatus_hs;
-    target_ulong vscfistatus;
+    /* CFI Extension ss priv */
     target_ulong ss_priv;
 #endif
     target_ulong cur_pmmask;

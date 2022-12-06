@@ -150,18 +150,18 @@ void helper_cfi_landing_pad(CPURISCVState *env, int lbl, int inst_type)
         switch (inst_type) {
         case FCFI_LPLL:
             /* Check for a lower label match. We already checked 4 byte alignment in tcg */
-            if (lbl != get_field(env->ulplr, ULPLR_LL)) {
+            if (lbl != get_field(env->lplr, LPLR_LL)) {
                 riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
             }
             env->elp = NO_LP_EXPECTED;
             break;
         case FCFI_ML:
-            if (lbl != get_field(env->ulplr,  ULPLR_ML)) {
+            if (lbl != get_field(env->lplr, LPLR_ML)) {
                 riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
             }
             break;
         case FCFI_UL:
-            if (lbl != get_field(env->ulplr,  ULPLR_UL)) {
+            if (lbl != get_field(env->lplr, LPLR_UL)) {
                 riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());
             }
         }
@@ -174,14 +174,14 @@ void helper_cfi_set_landing_pad(CPURISCVState *env, int lbl, int inst_type)
         switch (inst_type) {
         case FCFI_LPLL:
             /* setting lower label always clears up entire field */
-            env->ulplr = 0;
-            env->ulplr = set_field(env->ulplr, ULPLR_LL, lbl);
+            env->lplr = 0;
+            env->lplr = set_field(env->lplr, LPLR_LL, lbl);
             break;
         case FCFI_ML:
-            env->ulplr = set_field(env->ulplr, ULPLR_ML, lbl);
+            env->lplr = set_field(env->lplr, LPLR_ML, lbl);
             break;
         case FCFI_UL:
-            env->ulplr = set_field(env->ulplr, ULPLR_UL, lbl);
+            env->lplr = set_field(env->lplr, LPLR_UL, lbl);
             break;                        
         }
     }
@@ -246,8 +246,8 @@ target_ulong helper_sret(CPURISCVState *env)
     }
 
     if (cpu_get_fcfien(env)) {
-        env->elp = get_field(env->mcfistatus, CFISTATUS_SPELP);
-        env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_SPELP, 0);
+        env->elp = get_field(env->mstatus, MSTATUS_SPELP);
+        env->mstatus = set_field(env->mstatus, MSTATUS_SPELP, 0);
     }
 
     riscv_cpu_set_mode(env, prev_priv);
@@ -292,8 +292,8 @@ target_ulong helper_mret(CPURISCVState *env)
     }
 
     if (cpu_get_fcfien(env)) {
-        env->elp = get_field(env->mcfistatus, CFISTATUS_MPELP);
-        env->mcfistatus = set_field(env->mcfistatus, CFISTATUS_MPELP, 0);
+        env->elp = get_field(env->mstatus, MSTATUS_MPELP);
+        env->mstatus = set_field(env->mstatus, MSTATUS_MPELP, 0);
     }
     
     return retpc;
