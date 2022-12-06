@@ -122,14 +122,6 @@ void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
          */
         flags = FIELD_DP32(flags, TB_FLAGS, FCFI_LP_EXPECTED,
                            env->elp != NO_LP_EXPECTED);
-        /*
-         * Backwards CFI instructions are only legal when BCFI is
-         * enabled. Since the shadow stack instructions don't otherwise
-         * require a C helper, BFCI enable is built into the context to
-         * inform the translation routines.
-         */
-        flags = FIELD_DP32(flags, TB_FLAGS, BCFI_ENABLED, cpu_get_bcfien(env) ? 1 : 0);
-        flags = FIELD_DP32(flags, TB_FLAGS, FCFI_ENABLED, cpu_get_fcfien(env) ? 1 : 0);
     }
 
 #ifdef CONFIG_USER_ONLY
