@@ -1207,7 +1207,8 @@ static RISCVException write_mstatus(CPURISCVState *env, int csrno,
     }
 
     /* If cfi extension is available, then apply cfi status mask */
-    if (env_archcpu(env)->cfg.ext_cfi) {
+    if (env_archcpu(env)->cfg.ext_cfi &&
+        get_field(env->menvcfg, MENVCFG_CFI)) {
         mask |= CFISTATUS_M_MASK;
     }
 
