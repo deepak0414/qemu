@@ -566,7 +566,6 @@ typedef enum {
     rv_op_zip = 396,
     rv_op_xperm4 = 397,
     rv_op_xperm8 = 398,
-<<<<<<< HEAD
     rv_op_vle8_v = 399,
     rv_op_vle16_v = 400,
     rv_op_vle32_v = 401,
@@ -1712,7 +1711,6 @@ const rv_opcode_data opcode_data[] = {
     { "zip", rv_codec_r, rv_fmt_rd_rs1, NULL, 0, 0, 0 },
     { "xperm4", rv_codec_r, rv_fmt_rd_rs1_rs2, NULL, 0, 0, 0 },
     { "xperm8", rv_codec_r, rv_fmt_rd_rs1, NULL, 0, 0, 0 },
-<<<<<<< HEAD
     { "vle8.v", rv_codec_v_ldst, rv_fmt_ldst_vd_rs1_vm, NULL, rv_op_vle8_v, rv_op_vle8_v, 0 },
     { "vle16.v", rv_codec_v_ldst, rv_fmt_ldst_vd_rs1_vm, NULL, rv_op_vle16_v, rv_op_vle16_v, 0 },
     { "vle32.v", rv_codec_v_ldst, rv_fmt_ldst_vd_rs1_vm, NULL, rv_op_vle32_v, rv_op_vle32_v, 0 },
