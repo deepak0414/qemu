@@ -429,15 +429,15 @@ static int write_lplr(CPURISCVState *env, int csrno, target_ulong val)
     return RISCV_EXCP_NONE;
 }
 
-static int read_ussp(CPURISCVState *env, int csrno, target_ulong *val)
+static int read_ssp(CPURISCVState *env, int csrno, target_ulong *val)
 {
     *val = env->ssp;
     return RISCV_EXCP_NONE;
 }
 
-static int write_ussp(CPURISCVState *env, int csrno, target_ulong val)
+static int write_ssp(CPURISCVState *env, int csrno, target_ulong val)
 {
-    env->ssp = val & ~3ULL; // XXX xlen
+    env->ssp = val;
     return RISCV_EXCP_NONE;
 }
 
@@ -3766,7 +3766,7 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_SEED] = { "seed", seed, NULL, NULL, rmw_seed },
     /* User mode CFI CSR */
     [CSR_LPLR] = { "lplr", cfi, read_lplr, write_lplr },
-    [CSR_SSP]  = { "ssp", cfi, read_ussp, write_ussp },
+    [CSR_SSP]  = { "ssp", cfi, read_ssp, write_ssp },
 
 #if !defined(CONFIG_USER_ONLY)
     /* Machine Timers and Counters */
