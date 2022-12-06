@@ -577,7 +577,7 @@ static void riscv_cpu_reset(DeviceState *dev)
     }
     /* mmte is supposed to have pm.current hardwired to 1 */
     env->mmte |= (PM_EXT_INITIAL | MMTE_M_PM_CURRENT);
-    /* XXXKW may not be necessary? Surely CPU reset includes a full TLB flush somehow */
+    /* Surely CPU reset includes a full TLB flush somehow. May not be necessary but no harm */
     env->ss_priv = -1;
 #endif
     env->xl = riscv_cpu_mxl(env);

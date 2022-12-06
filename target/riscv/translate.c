@@ -1198,9 +1198,6 @@ static void riscv_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
     uint16_t opcode16 = translator_lduw(env, &ctx->base, ctx->base.pc_next);
     int i;
 
-    /* XXXKW consider a different approach that takes care of business
-     * right after translating the first instruction? Blow up the block
-     * and exit? */
     ctx->ol = ctx->xl;
     decode_opc(env, ctx, opcode16);
     ctx->base.pc_next = ctx->pc_succ_insn;

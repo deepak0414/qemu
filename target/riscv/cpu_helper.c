@@ -745,7 +745,6 @@ void riscv_cpu_set_mode(CPURISCVState *env, target_ulong newpriv)
          * shadow stack TLB needs to be flushed - unless the most recent
          * use of the SS TLB was for the same privilege mode.
          */
-        /* FIXME: this is redundant if virt just flipped */
         tlb_flush_by_mmuidx(env_cpu(env), 1 << MMU_IDX_SS_ACCESS);
         /* Ignoring env->virt here since currently every time it flips,
          * all TLBs are flushed anyway.

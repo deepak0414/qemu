@@ -3765,7 +3765,6 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     /* Crypto Extension */
     [CSR_SEED] = { "seed", seed, NULL, NULL, rmw_seed },
     /* User mode CFI CSR */
-    /* User mode CFI CSRs */
     [CSR_LPLR] = { "lplr", cfi, read_lplr, write_lplr },
     [CSR_SSP]  = { "ssp", cfi, read_ussp, write_ussp },
 
