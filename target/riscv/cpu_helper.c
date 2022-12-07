@@ -1093,7 +1093,9 @@ restart:
         } else if (!legal_sstack_access(access_type, is_sstack,
                                         sstack_page)) {
             /* Illegal combo of instruction type and page attribute */
-            return TRANSLATE_FAIL;
+            /* As per spec, this is access violation. As a let's return TRANSLATE_PMP_FAIL */
+            /* raise_mmu_exception will convert this into ACCESS_AMO_STORE or LOAD_ACCESS */
+            return TRANSLATE_PMP_FAIL;
         } else {
             /* if necessary, set accessed and dirty bits. */
             target_ulong updated_pte = pte | PTE_A |
