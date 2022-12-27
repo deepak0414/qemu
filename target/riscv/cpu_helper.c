@@ -1084,7 +1084,7 @@ restart:
                    ((pte & PTE_X) && mxr))) {
             /* Read access check failed */
             return TRANSLATE_FAIL;
-        } else if (access_type == MMU_DATA_STORE && !(pte & PTE_W)) {
+        } else if ((access_type == MMU_DATA_STORE && !is_sstack) && !(pte & PTE_W)) {
             /* Write access check failed */
             return TRANSLATE_FAIL;
         } else if (access_type == MMU_INST_FETCH && !(pte & PTE_X)) {
