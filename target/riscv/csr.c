@@ -163,6 +163,50 @@ static RISCVException ctr32(CPURISCVState *env, int csrno)
     return ctr(env, csrno);
 }
 
+static RISCVException cfi(CPURISCVState *env, int csrno)
+{
+    /* no cfi extension */
+    if (!(env_archcpu(env)->cfg.ext_cfi)) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+    /*
+     * CONFIG_USER_MODE always allow access for now. Better for user mode only
+     * functionality
+     */
+#if !defined(CONFIG_USER_ONLY)
+    /* current priv not M */
+    if (env->priv != PRV_M) {
+        /* menvcfg says no CFI */
+        if (!get_field(env->menvcfg, MENVCFG_CFI)) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+
+        /* V = 1 and henvcfg says no CFI. raise virtual instr fault */
+        if (riscv_cpu_virt_enabled(env) &&
+            !get_field(env->henvcfg, HENVCFG_CFI)) {
+            return RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
+        }
+
+        /*
+         * LPLR and SSP are not accessible to U mode if disabled via status
+         * CSR
+         */
+        if (env->priv == PRV_U) {
+            if (csrno == CSR_LPLR &&
+                !get_field(env->mstatus, MSTATUS_UFCFIEN)) {
+                return RISCV_EXCP_ILLEGAL_INST;
+            }
+            if (csrno == CSR_SSP &&
+                !get_field(env->mstatus, MSTATUS_UBCFIEN)) {
+                return RISCV_EXCP_ILLEGAL_INST;
+            }
+        }
+    }
+#endif
+
+    return RISCV_EXCP_NONE;
+}
+
 #if !defined(CONFIG_USER_ONLY)
 static RISCVException mctr(CPURISCVState *env, int csrno)
 {
@@ -483,6 +527,32 @@ static RISCVException seed(CPURISCVState *env, int csrno)
 #else
     return RISCV_EXCP_NONE;
 #endif
+}
+
+/* Zisslpcfi CSR_LPLR read/write */
+static int read_lplr(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    *val = env->lplr;
+    return RISCV_EXCP_NONE;
+}
+
+static int write_lplr(CPURISCVState *env, int csrno, target_ulong val)
+{
+    env->lplr = val & (LPLR_UL | LPLR_ML | LPLR_LL);
+    return RISCV_EXCP_NONE;
+}
+
+/* Zisslpcfi CSR_SSP read/write */
+static int read_ssp(CPURISCVState *env, int csrno, target_ulong *val)
+{
+    *val = env->ssp;
+    return RISCV_EXCP_NONE;
+}
+
+static int write_ssp(CPURISCVState *env, int csrno, target_ulong val)
+{
+    env->ssp = val;
+    return RISCV_EXCP_NONE;
 }
 
 /* User Floating-Point CSRs */
@@ -1250,6 +1320,11 @@ static RISCVException write_mstatus(CPURISCVState *env, int csrno,
         }
     }
 
+    /* If cfi extension is available, then apply cfi status mask */
+    if (env_archcpu(env)->cfg.ext_cfi) {
+        mask |= CFISTATUS_M_MASK;
+    }
+
     mstatus = (mstatus & ~mask) | (val & mask);
 
     if (xl > MXL_RV32) {
@@ -1883,6 +1958,9 @@ static RISCVException write_menvcfg(CPURISCVState *env, int csrno,
 
     if (riscv_cpu_mxl(env) == MXL_RV64) {
         mask |= MENVCFG_PBMTE | MENVCFG_STCE;
+        if (env_archcpu(env)->cfg.ext_cfi) {
+            mask |= MENVCFG_CFI;
+        }
     }
     env->menvcfg = (env->menvcfg & ~mask) | (val & mask);
 
@@ -1901,6 +1979,10 @@ static RISCVException write_menvcfgh(CPURISCVState *env, int csrno,
 {
     uint64_t mask = MENVCFG_PBMTE | MENVCFG_STCE;
     uint64_t valh = (uint64_t)val << 32;
+
+    if (env_archcpu(env)->cfg.ext_cfi) {
+        mask |= MENVCFG_CFI;
+    }
 
     env->menvcfg = (env->menvcfg & ~mask) | (valh & mask);
 
@@ -1963,6 +2045,14 @@ static RISCVException write_henvcfg(CPURISCVState *env, int csrno,
 
     if (riscv_cpu_mxl(env) == MXL_RV64) {
         mask |= HENVCFG_PBMTE | HENVCFG_STCE;
+        /*
+         * If cfi available and menvcfg.CFI = 1, then apply cfi mask for
+         * henvcfg
+         */
+        if (env_archcpu(env)->cfg.ext_cfi &&
+            get_field(env->menvcfg, MENVCFG_CFI)) {
+            mask |= HENVCFG_CFI;
+        }
     }
 
     env->henvcfg = (env->henvcfg & ~mask) | (val & mask);
@@ -1990,6 +2080,10 @@ static RISCVException write_henvcfgh(CPURISCVState *env, int csrno,
     uint64_t mask = HENVCFG_PBMTE | HENVCFG_STCE;
     uint64_t valh = (uint64_t)val << 32;
     RISCVException ret;
+
+    if (env_archcpu(env)->cfg.ext_cfi) {
+        mask |= HENVCFG_CFI;
+    }
 
     ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSENVCFG);
     if (ret != RISCV_EXCP_NONE) {
@@ -2270,6 +2364,11 @@ static RISCVException read_sstatus_i128(CPURISCVState *env, int csrno,
         mask |= SSTATUS64_UXL;
     }
 
+    if ((env_archcpu(env)->cfg.ext_cfi) &&
+         get_field(env->menvcfg, MENVCFG_CFI)) {
+        mask |= CFISTATUS_S_MASK;
+    }
+
     *val = int128_make128(sstatus, add_status_sd(MXL_RV128, sstatus));
     return RISCV_EXCP_NONE;
 }
@@ -2280,6 +2379,11 @@ static RISCVException read_sstatus(CPURISCVState *env, int csrno,
     target_ulong mask = (sstatus_v1_10_mask);
     if (env->xl != MXL_RV32 || env->debugger) {
         mask |= SSTATUS64_UXL;
+    }
+
+    if ((env_archcpu(env)->cfg.ext_cfi) &&
+         get_field(env->menvcfg, MENVCFG_CFI)) {
+        mask |= CFISTATUS_S_MASK;
     }
     /* TODO: Use SXL not MXL. */
     *val = add_status_sd(riscv_cpu_mxl(env), env->mstatus & mask);
@@ -2295,6 +2399,12 @@ static RISCVException write_sstatus(CPURISCVState *env, int csrno,
         if ((val & SSTATUS64_UXL) != 0) {
             mask |= SSTATUS64_UXL;
         }
+    }
+
+    /* If cfi available and menvcfg.CFI = 1, apply CFI mask for sstatus */
+    if ((env_archcpu(env)->cfg.ext_cfi) &&
+         get_field(env->menvcfg, MENVCFG_CFI)) {
+        mask |= CFISTATUS_S_MASK;
     }
     target_ulong newval = (env->mstatus & ~mask) | (val & mask);
     return write_mstatus(env, CSR_MSTATUS, newval);
@@ -4000,6 +4110,10 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
 
     /* Crypto Extension */
     [CSR_SEED] = { "seed", seed, NULL, NULL, rmw_seed },
+
+    /* User mode CFI CSR */
+    [CSR_LPLR] = { "lplr", cfi, read_lplr, write_lplr },
+    [CSR_SSP]  = { "ssp", cfi, read_ssp, write_ssp },
 
 #if !defined(CONFIG_USER_ONLY)
     /* Machine Timers and Counters */
