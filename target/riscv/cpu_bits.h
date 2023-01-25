@@ -39,6 +39,10 @@
 
 /* Control and Status Registers */
 
+/* CFI CSRs */
+#define CSR_LPLR            0x006
+#define CSR_SSP             0x020
+
 /* User Trap Setup */
 #define CSR_USTATUS         0x000
 #define CSR_UIE             0x004
@@ -542,6 +546,10 @@
 #define MSTATUS_TVM         0x00100000 /* since: priv-1.10 */
 #define MSTATUS_TW          0x00200000 /* since: priv-1.10 */
 #define MSTATUS_TSR         0x00400000 /* since: priv-1.10 */
+#define MSTATUS_UFCFIEN     0x00800000 /* Zisslpcfi-0.1 */
+#define MSTATUS_UBCFIEN     0x01000000 /* Zisslpcfi-0.1 */
+#define MSTATUS_SPELP       0x02000000 /* Zisslpcfi-0.1 */
+#define MSTATUS_MPELP       0x04000000 /* Zisslpcfi-0.1 */
 #define MSTATUS_GVA         0x4000000000ULL
 #define MSTATUS_MPV         0x8000000000ULL
 
@@ -572,11 +580,20 @@ typedef enum {
 #define SSTATUS_XS          0x00018000
 #define SSTATUS_SUM         0x00040000 /* since: priv-1.10 */
 #define SSTATUS_MXR         0x00080000
+#define SSTATUS_UFCFIEN     MSTATUS_UFCFIEN /* Zisslpcfi-0.1 */
+#define SSTATUS_UBCFIEN     MSTATUS_UBCFIEN /* Zisslpcfi-0.1 */
+#define SSTATUS_SPELP       MSTATUS_SPELP   /* Zisslpcfi-0.1 */
 
 #define SSTATUS64_UXL       0x0000000300000000ULL
 
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000ULL
+
+#define CFISTATUS_M_MASK    (MSTATUS_UFCFIEN | MSTATUS_UBCFIEN | \
+                             MSTATUS_MPELP | MSTATUS_SPELP)
+
+#define CFISTATUS_S_MASK    (SSTATUS_UFCFIEN | SSTATUS_UBCFIEN | \
+                             SSTATUS_SPELP)
 
 /* hstatus CSR bits */
 #define HSTATUS_VSBE         0x00000020
@@ -747,10 +764,14 @@ typedef enum RISCVException {
 #define MENVCFG_CBIE                       (3UL << 4)
 #define MENVCFG_CBCFE                      BIT(6)
 #define MENVCFG_CBZE                       BIT(7)
+#define MENVCFG_SFCFIEN                    BIT(59)
+#define MENVCFG_CFI                        BIT(60)
 #define MENVCFG_PBMTE                      (1ULL << 62)
 #define MENVCFG_STCE                       (1ULL << 63)
 
 /* For RV32 */
+#define MENVCFGH_SFCFIEN                   BIT(27)
+#define MENVCFGH_CFI                       BIT(28)
 #define MENVCFGH_PBMTE                     BIT(30)
 #define MENVCFGH_STCE                      BIT(31)
 
@@ -763,10 +784,14 @@ typedef enum RISCVException {
 #define HENVCFG_CBIE                       MENVCFG_CBIE
 #define HENVCFG_CBCFE                      MENVCFG_CBCFE
 #define HENVCFG_CBZE                       MENVCFG_CBZE
+#define HENVCFG_SFCFIEN                    MENVCFG_SFCFIEN
+#define HENVCFG_CFI                        MENVCFG_CFI
 #define HENVCFG_PBMTE                      MENVCFG_PBMTE
 #define HENVCFG_STCE                       MENVCFG_STCE
 
 /* For RV32 */
+#define HENVCFGH_SFCFIEN                    MENVCFGH_SFCFIEN
+#define HENVCFGH_CFI                        MENVCFGH_CFI
 #define HENVCFGH_PBMTE                      MENVCFGH_PBMTE
 #define HENVCFGH_STCE                       MENVCFGH_STCE
 

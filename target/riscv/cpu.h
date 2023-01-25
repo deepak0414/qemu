@@ -181,6 +181,11 @@ struct CPUArchState {
 
     uint32_t features;
 
+    /* CFI Extension user mode registers and state */
+    uint32_t     lplr;
+    target_ulong ssp;
+    cfi_elp      elp;
+
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
 #endif
