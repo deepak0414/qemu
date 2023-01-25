@@ -85,7 +85,8 @@ enum {
     RISCV_FEATURE_PMP,
     RISCV_FEATURE_EPMP,
     RISCV_FEATURE_MISA,
-    RISCV_FEATURE_DEBUG
+    RISCV_FEATURE_DEBUG,
+    RISCV_FEATURE_PMPSS
 };
 
 /* Privileged specification version */
@@ -471,6 +472,8 @@ struct RISCVCPUConfig {
     uint32_t mvendorid;
     uint64_t marchid;
     uint64_t mimpid;
+    bool ext_zimops;
+    bool ext_cfi;
 
     /* Vendor-specific custom extensions */
     bool ext_XVentanaCondOps;
@@ -485,6 +488,7 @@ struct RISCVCPUConfig {
     bool mmu;
     bool pmp;
     bool epmp;
+    bool pmpss;
     bool debug;
 
     bool short_isa_string;
