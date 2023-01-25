@@ -471,6 +471,8 @@ struct RISCVCPUConfig {
     uint32_t mvendorid;
     uint64_t marchid;
     uint64_t mimpid;
+    bool ext_zimops;
+    bool ext_cfi;
 
     /* Vendor-specific custom extensions */
     bool ext_XVentanaCondOps;
