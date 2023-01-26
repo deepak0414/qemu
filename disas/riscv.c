@@ -163,6 +163,7 @@ typedef enum {
     rv_codec_v_i,
     rv_codec_vsetvli,
     rv_codec_vsetivli,
+    rv_codec_lp,
 } rv_codec;
 
 typedef enum {
@@ -935,6 +936,19 @@ typedef enum {
     rv_op_vsetvli = 766,
     rv_op_vsetivli = 767,
     rv_op_vsetvl = 768,
+    rv_op_lpsll = 769,
+    rv_op_lpcll = 770,
+    rv_op_lpsml = 771,
+    rv_op_lpcml = 772,
+    rv_op_lpsul = 773,
+    rv_op_lpcul = 774,
+    rv_op_sspush = 775,
+    rv_op_sspop = 776,
+    rv_op_ssprr = 777,
+    rv_op_ssamoswap = 778,
+    rv_op_sschkra = 779,
+    rv_op_zimops_r = 780,
+    rv_op_zimops_rr = 781,
 } rv_op;
 
 /* structures */
@@ -1011,6 +1025,7 @@ static const char rv_vreg_name_sym[32][4] = {
 #define rv_fmt_pred_succ              "O\tp,s"
 #define rv_fmt_rs1_rs2                "O\t1,2"
 #define rv_fmt_rd_imm                 "O\t0,i"
+#define rv_fmt_imm                    "O\ti"
 #define rv_fmt_rd_offset              "O\t0,o"
 #define rv_fmt_rd_rs1_rs2             "O\t0,1,2"
 #define rv_fmt_frd_rs1                "O\t3,1"
@@ -2065,7 +2080,20 @@ const rv_opcode_data opcode_data[] = {
     { "vsext.vf8", rv_codec_v_r, rv_fmt_vd_vs2_vm, NULL, rv_op_vsext_vf8, rv_op_vsext_vf8, 0 },
     { "vsetvli", rv_codec_vsetvli, rv_fmt_vsetvli, NULL, rv_op_vsetvli, rv_op_vsetvli, 0 },
     { "vsetivli", rv_codec_vsetivli, rv_fmt_vsetivli, NULL, rv_op_vsetivli, rv_op_vsetivli, 0 },
-    { "vsetvl", rv_codec_r, rv_fmt_rd_rs1_rs2, NULL, rv_op_vsetvl, rv_op_vsetvl, 0 }
+    { "vsetvl", rv_codec_r, rv_fmt_rd_rs1_rs2, NULL, rv_op_vsetvl, rv_op_vsetvl, 0 },
+    { "lpsll", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "lpcll", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "lpsml", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "lpcml", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "lpsul", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "lpcul", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "sspush", rv_codec_r, rv_fmt_rs1, NULL, 0, 0, 0 },
+    { "sspop", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "ssprr", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "ssamoswap", rv_codec_r, rv_fmt_rd_rs1_rs2, NULL, 0, 0, 0 },
+    { "sschkra", rv_codec_none, rv_fmt_none, NULL, 0, 0, 0 },
+    { "zimops_r", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "zimops_rr", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 }
 };
 
 /* CSR names */
@@ -2084,6 +2112,8 @@ static const char *csr_name(int csrno)
     case 0x000a: return "vxrm";
     case 0x000f: return "vcsr";
     case 0x0015: return "seed";
+    case 0x0006: return "lplr";
+    case 0x0020: return "ssp";
     case 0x0040: return "uscratch";
     case 0x0041: return "uepc";
     case 0x0042: return "ucause";
@@ -3554,6 +3584,87 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
             case 1: op = rv_op_csrrw; break;
             case 2: op = rv_op_csrrs; break;
             case 3: op = rv_op_csrrc; break;
+            case 4:
+                /* if matches mop_r mask */
+                if ((((inst >> 15) & 0b10110011110000000) ==
+                        0b10000001110000000)) {
+                    if ((inst >> 25) == 0b1000000) {
+                        switch ((inst >> 20) & 0b11) {
+                        case 0: /* sspush and sspop */
+                            if (((inst >> 15) & 0b11111) &&
+                                !((inst >> 7) & 0b11111))
+                                op = rv_op_sspush;
+                            if (!((inst >> 15) & 0b11111) &&
+                                ((inst >> 7) & 0b11111))
+                                op = rv_op_sspop;
+                            break;
+
+                        case 1: /* ssprr */
+                            if (!((inst >> 15) & 0b11111) &&
+                                ((inst >> 7) & 0b11111))
+                                op = rv_op_ssprr;
+                            break;
+
+                        default:
+                            op = rv_op_zimops_r;
+                            break;
+                        }
+                    } else {
+                        op = rv_op_zimops_r;
+                    }
+                } else if (((inst >> 15) & 0b10110010000000000) ==
+                            0b10000010000000000) { /* if matches mop_rr mask */
+                    switch (inst >> 28) {
+                    case 0b1000:
+                        switch ((inst >> 7) & 0b11111) {
+                        case 0b00000:
+                            /* collect 5 bits */
+                            switch (((inst >> 23) & 0b11111)) {
+                            case 23:
+                                op = rv_op_lpcul;
+                                break;
+                            case 22:
+                                op = rv_op_lpsul;
+                                break;
+                            case 13:
+                                op = rv_op_lpcml;
+                                break;
+                            case 12:
+                                op = rv_op_lpsml;
+                                break;
+                            case 6:
+                            case 7:
+                                op = rv_op_lpcll;
+                                break;
+                            case 4:
+                            case 5:
+                                op = rv_op_lpsll;
+                                break;
+                            default:
+                                if (inst ==
+                                    0b10001010000100101100000001110011) {
+                                    op = rv_op_sschkra;
+                                } else {
+                                    op = rv_op_zimops_rr;
+                                }
+                                break;
+                            }
+                            break;
+                        default:
+                            if ((inst >> 26) == 0b100000) {
+                                op = rv_op_ssamoswap;
+                            } else {
+                                op = rv_op_zimops_rr;
+                            }
+                            break;
+                        }
+                        break;
+                    default:
+                        op = rv_op_zimops_rr;
+                        break;
+                    }
+                }
+                break;
             case 5: op = rv_op_csrrwi; break;
             case 6: op = rv_op_csrrsi; break;
             case 7: op = rv_op_csrrci; break;
@@ -3883,6 +3994,17 @@ static uint32_t operand_vm(rv_inst inst)
     return (inst << 38) >> 63;
 }
 
+static uint32_t operand_lpl(rv_inst inst)
+{
+    uint32_t label_width = 9;
+
+    if ((inst >> 26) & 0b11) {
+        label_width = 8;
+    }
+
+    return (inst >> 15) & ((1 << label_width) - 1);
+}
+
 /* decode operands */
 
 static void decode_inst_operands(rv_decode *dec, rv_isa isa)
@@ -4198,6 +4320,9 @@ static void decode_inst_operands(rv_decode *dec, rv_isa isa)
         dec->rd = operand_rd(inst);
         dec->imm = operand_vimm(inst);
         dec->vzimm = operand_vzimm10(inst);
+        break;
+    case rv_codec_lp:
+        dec->imm = operand_lpl(inst);
         break;
     };
 }
