@@ -584,6 +584,11 @@ static void riscv_cpu_reset_hold(Object *obj)
     }
     /* mmte is supposed to have pm.current hardwired to 1 */
     env->mmte |= (PM_EXT_INITIAL | MMTE_M_PM_CURRENT);
+    /*
+     * may not be necessary? Surely CPU reset includes a full TLB
+     * flush somehow.
+     */
+    env->ss_priv = -1;
 #endif
     env->xl = riscv_cpu_mxl(env);
     riscv_cpu_update_mask(env);
