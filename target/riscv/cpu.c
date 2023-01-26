@@ -584,6 +584,8 @@ static void riscv_cpu_reset_hold(Object *obj)
     }
     /* mmte is supposed to have pm.current hardwired to 1 */
     env->mmte |= (PM_EXT_INITIAL | MMTE_M_PM_CURRENT);
+    /* Initialize ss_priv to current priv. */
+    env->ss_priv = env->priv;
 #endif
     env->xl = riscv_cpu_mxl(env);
     riscv_cpu_update_mask(env);
