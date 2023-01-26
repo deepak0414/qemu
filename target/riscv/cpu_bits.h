@@ -600,6 +600,16 @@ typedef enum {
     LP_EXPECTED = 1,
 } cfi_elp;
 
+#define LPLR_UL            (((1 << 8) - 1) << 17)
+#define LPLR_ML            (((1 << 8) - 1) << 9)
+#define LPLR_LL            ((1 << 9) - 1)
+
+typedef enum {
+    FCFI_LPLL = 0,
+    FCFI_ML = 1,
+    FCFI_UL = 2,
+} cfi_label_inst;
+
 /* hstatus CSR bits */
 #define HSTATUS_VSBE         0x00000020
 #define HSTATUS_GVA          0x00000040

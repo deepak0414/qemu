@@ -66,6 +66,20 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     }
 
     gen_set_gpri(ctx, a->rd, ctx->pc_succ_insn);
+
+    if (ctx->cfg_ptr->ext_cfi) {
+        /*
+         * Rely on a helper to check the forward CFI enable for the
+         * current process mode. The alternatives would be (1) include
+         * "fcfi enabled" in the cflags or (2) maintain a "fcfi
+         * currently enabled" in cpu_env and emit TCG code to access
+         * and test it.
+         */
+        if (a->rd == xRA || a->rd == xT0 || (a->rs1 != xRA && a->rs1 != xT0)) {
+            gen_helper_cfi_jalr(cpu_env, tcg_constant_i32(LP_EXPECTED));
+        }
+    }
+
     lookup_and_goto_ptr(ctx);
 
     if (misaligned) {

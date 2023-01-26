@@ -97,6 +97,11 @@ DEF_HELPER_FLAGS_2(fcvt_h_l, TCG_CALL_NO_RWG, i64, env, tl)
 DEF_HELPER_FLAGS_2(fcvt_h_lu, TCG_CALL_NO_RWG, i64, env, tl)
 DEF_HELPER_FLAGS_2(fclass_h, TCG_CALL_NO_RWG_SE, tl, env, i64)
 
+/* Forward CFI label checking */
+DEF_HELPER_2(cfi_jalr, void, env, int)
+DEF_HELPER_3(cfi_check_landing_pad, void, env, int, int)
+DEF_HELPER_3(cfi_set_landing_pad, void, env, int, int)
+
 /* Special functions */
 DEF_HELPER_2(csrr, tl, env, int)
 DEF_HELPER_3(csrw, void, env, int, tl)
@@ -112,6 +117,8 @@ DEF_HELPER_1(tlb_flush, void, env)
 /* Native Debug */
 DEF_HELPER_1(itrigger_match, void, env)
 #endif
+/* helper for back cfi mismatch */
+DEF_HELPER_1(sschkra_mismatch, void, env)
 
 /* Hypervisor functions */
 #ifndef CONFIG_USER_ONLY
