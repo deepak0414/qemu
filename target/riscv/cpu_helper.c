@@ -40,6 +40,56 @@ int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 #endif
 }
 
+bool cpu_get_fcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return false;
+#else
+    /* no cfi extension, return false */
+    if (!(env_archcpu(env)->cfg.ext_cfi)) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return env->mstatus & MSTATUS_UFCFIEN;
+    case PRV_S:
+        return env->mstatus & MSTATUS_SFCFIEN;
+    case PRV_M:
+        return env->mstatus & MSTATUS_MFCFIEN;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
+bool cpu_get_bcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return false;
+#else
+    /* no cfi extension, return false */
+    if (!(env_archcpu(env)->cfg.ext_cfi)) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return env->mstatus & MSTATUS_UBCFIEN;
+    case PRV_S:
+        return env->mstatus & MSTATUS_SBCFIEN;
+    case PRV_M:
+        /*
+         * no gating against menvcfg/henvcg here. default back cfi is on for
+         * M mode
+         */
+        return true;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
 void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
                           target_ulong *cs_base, uint32_t *pflags)
 {
