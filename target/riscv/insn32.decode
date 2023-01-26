@@ -37,6 +37,8 @@
 %imm_u    12:s20                 !function=ex_shift_12
 %imm_bs   30:2                   !function=ex_shift_3
 %imm_rnum 20:4
+%imm_cfi9  15:9
+%imm_cfi8  15:8
 
 # Argument sets:
 &empty
@@ -162,6 +164,33 @@ csrrc    ............     ..... 011 ..... 1110011 @csr
 csrrwi   ............     ..... 101 ..... 1110011 @csr
 csrrsi   ............     ..... 110 ..... 1110011 @csr
 csrrci   ............     ..... 111 ..... 1110011 @csr
+
+# zimops (unpriv integer may be operations) instructions with system opcode
+# These're superset of for cfi encodings. zimops_r and zimops_rr should be last
+# entry in below overlapping patterns so that it acts as final sink for overlapping patterns.
+# Any new encoding that can be used should be placed above mop.r and mop.rr
+
+# cfi instructions carved out of mop.r
+{
+  sspush    100000 0 11100     ..... 100 00000 1110011 %rs1
+  sspop     100000 0 11100     00000 100 ..... 1110011 %rd
+  ssprr     100000 0 11101     00000 100 ..... 1110011 %rd
+  zimops_r  1-00-- 0 111--     ----- 100 ..... 1110011 %rd
+}
+
+# cfi instructions carved out of mop.rr
+{
+  sschckra  100010 1 00001     00101 100 00000 1110011
+  ssamoswap 100000 1 .....     ..... 100 ..... 1110011 @r
+
+  lpsll     100000 1 0 .........    100 00000 1110011 %imm_cfi9
+  lpcll     100000 1 1 .........    100 00000 1110011 %imm_cfi9
+  lpsml     100001 1 0 0........    100 00000 1110011 %imm_cfi8
+  lpcml     100001 1 0 1........    100 00000 1110011 %imm_cfi8
+  lpsul     100010 1 1 0........    100 00000 1110011 %imm_cfi8
+  lpcul     100010 1 1 1........    100 00000 1110011 %imm_cfi8
+  zimops_rr 1-00-- 1 - ---------    100 ..... 1110011 %rd
+}
 
 # *** RV64I Base Instruction Set (in addition to RV32I) ***
 lwu      ............   ..... 110 ..... 0000011 @i
