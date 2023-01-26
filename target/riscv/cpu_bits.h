@@ -594,6 +594,11 @@ typedef enum {
 
 #define CFISTATUS_S_MASK    (SSTATUS_UFCFIEN | SSTATUS_UBCFIEN | \
                              SSTATUS_SPELP)
+/* enum for branch tracking state in cpu/hart */
+typedef enum {
+    NO_LP_EXPECTED = 0,
+    LP_EXPECTED = 1,
+} cfi_elp;
 
 /* hstatus CSR bits */
 #define HSTATUS_VSBE         0x00000020
