@@ -32,6 +32,7 @@
 #include "cpu_bits.h"
 #include "debug.h"
 #include "tcg/oversized-guest.h"
+#include "pmp.h"
 
 int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 {
@@ -62,8 +63,58 @@ int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 #endif
 }
 
-void cpu_get_tb_cpu_state(CPURISCVState *env, vaddr *pc,
-                          uint64_t *cs_base, uint32_t *pflags)
+bool cpu_get_fcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return false;
+#else
+    /* no cfi extension, return false */
+    if (!env_archcpu(env)->cfg.ext_cfi) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return (env->mstatus & MSTATUS_UFCFIEN) ? true : false;
+    case PRV_S:
+        return (env->menvcfg & MENVCFG_SFCFIEN) ? true : false;
+    case PRV_M:
+        return (env->mseccfg & MSECCFG_MFCFIEN) ? true : false;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
+bool cpu_get_bcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return false;
+#else
+    /* no cfi extension, return false */
+    if (!env_archcpu(env)->cfg.ext_cfi) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return (env->mstatus & MSTATUS_UBCFIEN) ? true : false;
+
+        /*
+         * no gating for back cfi in M/S mode. back cfi is always on for
+         * M/S mode
+         */
+    case PRV_S:
+    case PRV_M:
+        return true;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
+void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
+                          target_ulong *cs_base, uint32_t *pflags)
 {
     CPUState *cs = env_cpu(env);
     RISCVCPU *cpu = RISCV_CPU(cs);
