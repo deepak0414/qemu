@@ -1177,6 +1177,7 @@ static void riscv_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     ctx->fcfi_enabled = cpu_get_fcfien(env);
     ctx->fcfi_lp_expected = FIELD_EX32(tb_flags, TB_FLAGS, FCFI_LP_EXPECTED);
     ctx->zero = tcg_constant_tl(0);
+    ctx->virt_inst_excp = false;
 }
 
 static void riscv_tr_tb_start(DisasContextBase *db, CPUState *cpu)
