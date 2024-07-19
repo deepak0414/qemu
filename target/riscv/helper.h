@@ -124,6 +124,8 @@ DEF_HELPER_2(cbo_zero, void, env, tl)
 /* Forward CFI label checking */
 DEF_HELPER_2(cfi_jalr, void, env, int)
 DEF_HELPER_2(cfi_check_landing_pad, void, env, int)
+/* helper for sschk mismatch (zicfiss) */
+DEF_HELPER_3(sschk_mismatch, void, env, tl, tl)
 
 /* Special functions */
 DEF_HELPER_2(csrr, tl, env, int)

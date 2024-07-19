@@ -291,6 +291,15 @@ void helper_cfi_check_landing_pad(CPURISCVState *env, int lbl)
     }
 }
 
+void helper_sschk_mismatch(CPURISCVState *env, target_ulong rs1,
+                           target_ulong ssra)
+{
+    if (rs1 != ssra) {
+        env->sw_check_code = RISCV_EXCP_SW_CHECK_BCFI_TVAL;
+        riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
+    }
+}
+
 #ifndef CONFIG_USER_ONLY
 
 target_ulong helper_sret(CPURISCVState *env)
