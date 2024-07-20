@@ -245,6 +245,7 @@ struct CPUArchState {
     target_ulong sw_check_code;
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
+    target_ulong ssp_base;
 #endif
 
     target_ulong priv;

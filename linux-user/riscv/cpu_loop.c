@@ -25,6 +25,7 @@
 #include "signal-common.h"
 #include "elf.h"
 #include "semihosting/common-semi.h"
+#include "user-mmap.h"
 
 void cpu_loop(CPURISCVState *env)
 {
@@ -92,6 +93,55 @@ void cpu_loop(CPURISCVState *env)
 
         process_pending_signals(env);
     }
+}
+
+#define ZICFISS_GUARD_SIZE  (2UL * TARGET_PAGE_SIZE)
+#define ZICFISS_STACK_SIZE  (16UL * TARGET_PAGE_SIZE)
+#define ZICFISS_THREAD_SIZE (ZICFISS_STACK_SIZE + ZICFISS_GUARD_SIZE)
+
+void zicfiss_shadow_stack_alloc(CPUArchState *env)
+{
+    uintptr_t new_base;
+
+    /* SS page should be surrounded by two guard pages */
+    new_base = (uintptr_t) target_mmap(0, ZICFISS_THREAD_SIZE, PROT_NONE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if ((intptr_t)new_base == -1) {
+        perror("shadow stack alloc failure");
+        exit(EXIT_FAILURE);
+    }
+    new_base += TARGET_PAGE_SIZE;
+    int ret = mprotect((void *)new_base, ZICFISS_STACK_SIZE,
+                       PROT_READ | PROT_WRITE);
+    if (ret == -1) {
+        perror("shadow stack mprotect failure");
+        exit(EXIT_FAILURE);
+    }
+
+    env->ssp_base = new_base;
+    env->ssp = new_base + ZICFISS_STACK_SIZE;
+}
+
+void zicfiss_shadow_stack_release(CPUArchState *env)
+{
+    abi_ulong mmap_base;
+
+    if (env->ssp == 0) {
+        perror("release empty shadow stack");
+        exit(EXIT_FAILURE);
+    }
+
+    /* It should match shadow stack allocation. */
+    mmap_base = env->ssp_base - TARGET_PAGE_SIZE;
+
+    int ret = target_munmap(mmap_base, ZICFISS_THREAD_SIZE);
+    if (ret == -1) {
+        perror("shadow stack release failure");
+        exit(EXIT_FAILURE);
+    }
+
+    env->ssp_base = 0;
+    env->ssp = 0;
 }
 
 void target_cpu_copy_regs(CPUArchState *env, struct target_pt_regs *regs)

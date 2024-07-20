@@ -1009,6 +1009,7 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     env->priv = PRV_U;
     env->senvcfg = 0;
     env->menvcfg = 0;
+    env->ssp_base = 0;
 #endif
 
     /* on reset elp is clear */
