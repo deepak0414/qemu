@@ -6295,6 +6295,18 @@ abi_long do_arch_prctl(CPUX86State *env, int code, abi_ulong addr)
 # define PR_SME_VL_INHERIT   (1 << 17)
 #endif
 
+#ifndef PR_GET_SHADOW_STACK_STATUS
+# define PR_GET_SHADOW_STACK_STATUS     71
+#endif
+#ifndef PR_SET_SHADOW_STACK_STATUS
+# define PR_SET_SHADOW_STACK_STATUS     72
+# define PR_SHADOW_STACK_ENABLE         (1UL << 0)
+# define PR_SHADOW_STACK_WRITE          (1UL << 1)
+# define PR_SHADOW_STACK_PUSH           (1UL << 2)
+#endif
+#ifndef PR_LOCK_SHADOW_STACK_STATUS
+# define PR_LOCK_SHADOW_STACK_STATUS    73
+#endif
 #ifndef PR_GET_INDIR_BR_LP_STATUS
 # define PR_GET_INDIR_BR_LP_STATUS      74
 #endif
@@ -6488,6 +6500,9 @@ static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
     case PR_SET_TSC:
         /* Disable to prevent the target disabling stuff we need. */
         return -TARGET_EINVAL;
+    case PR_GET_SHADOW_STACK_STATUS:
+    case PR_SET_SHADOW_STACK_STATUS:
+    case PR_LOCK_SHADOW_STACK_STATUS:
     case PR_GET_INDIR_BR_LP_STATUS:
     case PR_SET_INDIR_BR_LP_STATUS:
     case PR_LOCK_INDIR_BR_LP_STATUS:
