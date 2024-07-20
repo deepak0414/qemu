@@ -1001,6 +1001,10 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     /* on reset ssp is set to 0 */
     env->ssp = 0;
 
+#ifdef CONFIG_USER_ONLY
+    env->ssp_base = 0;
+#endif
+
     /*
      * Bits 10, 6, 2 and 12 of mideleg are read only 1 when the Hypervisor
      * extension is enabled.

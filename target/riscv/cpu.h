@@ -232,6 +232,7 @@ struct CPUArchState {
     uint32_t elf_flags;
     bool ufcfien;
     bool ubcfien;
+    target_ulong ssp_base;
 #endif
 
 #ifndef CONFIG_USER_ONLY

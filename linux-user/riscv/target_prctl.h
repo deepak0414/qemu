@@ -13,6 +13,33 @@ static abi_long do_prctl_cfi(CPUArchState *env,
     if (env_archcpu(env)->cfg.ext_zicfilp) {
 
         switch (option) {
+        case PR_GET_SHADOW_STACK_STATUS:
+            abi_ulong bcfi_status = 0;
+            /* indirect branch tracking is enabled on the task or not */
+            bcfi_status |= (env->ubcfien ? PR_INDIR_BR_LP_ENABLE : 0);
+            return copy_to_user(flag, &bcfi_status, sizeof(bcfi_status)) ? \
+                   -EFAULT : 0;
+
+        case PR_SET_SHADOW_STACK_STATUS:
+            /* if any other bit is set, its invalid param */
+            if (flag & ~PR_SHADOW_STACK_ENABLE) {
+                return -TARGET_EINVAL;
+            }
+
+           if ((flag & PR_SHADOW_STACK_ENABLE)
+                && (env->ssp == 0 && !env->ubcfien)) {
+                    zicfiss_shadow_stack_alloc(env);
+            } else {
+                zicfiss_shadow_stack_release(env);
+            }
+            env->ubcfien = (flag & PR_SHADOW_STACK_ENABLE);
+            tb_flush(env_cpu(env));
+            return 0;
+
+        /* locking not implemented (also not needed for qemu-user) yet */
+        case PR_LOCK_SHADOW_STACK_STATUS:
+            return -TARGET_EINVAL;
+
         case PR_GET_INDIR_BR_LP_STATUS:
             abi_ulong fcfi_status = 0;
             /* indirect branch tracking is enabled on the task or not */
