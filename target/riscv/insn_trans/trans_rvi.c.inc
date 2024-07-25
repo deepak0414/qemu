@@ -65,6 +65,7 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
                     tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
                     tcg_env, offsetof(CPURISCVState, sw_check_code));
             generate_exception(ctx, RISCV_EXCP_SW_CHECK);
+            trace_zicfilp_unaligned_lpad_instr((uint64_t) ctx->base.pc_next);
             return true;
         }
     }
