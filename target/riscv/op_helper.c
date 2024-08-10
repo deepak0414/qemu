@@ -24,6 +24,7 @@
 #include "exec/exec-all.h"
 #include "exec/cpu_ldst.h"
 #include "exec/helper-proto.h"
+#include "trace.h"
 
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
@@ -255,6 +256,18 @@ void helper_cbo_inval(CPURISCVState *env, target_ulong address)
     check_zicbom_access(env, address, ra);
 
     /* We don't emulate the cache-hierarchy, so we're done. */
+}
+
+void helper_zicfilp_label_mismatch(CPURISCVState *env, target_ulong lpad_label,
+                                   target_ulong t2_label)
+{
+    trace_zicfilp_lpad_reg_mismatch(lpad_label, t2_label);
+}
+
+void helper_zicfiss_ra_mismatch(CPURISCVState *env, target_ulong ssra,
+                                target_ulong rs1)
+{
+    trace_zicfiss_sspopchk_reg_mismatch(ssra, rs1);
 }
 
 #ifndef CONFIG_USER_ONLY

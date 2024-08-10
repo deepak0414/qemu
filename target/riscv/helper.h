@@ -121,6 +121,10 @@ DEF_HELPER_2(cbo_clean_flush, void, env, tl)
 DEF_HELPER_2(cbo_inval, void, env, tl)
 DEF_HELPER_2(cbo_zero, void, env, tl)
 
+/* helper functions to trace riscv cfi violations */
+DEF_HELPER_3(zicfilp_label_mismatch, void, env, tl, tl)
+DEF_HELPER_3(zicfiss_ra_mismatch, void, env, tl, tl)
+
 /* Special functions */
 DEF_HELPER_2(csrr, tl, env, int)
 DEF_HELPER_3(csrw, void, env, int, tl)
